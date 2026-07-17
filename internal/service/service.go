@@ -4,10 +4,11 @@ import (
 	"errors"
 
 	"github.com/Engineer-DF/task-s/internal/domain"
+	"github.com/Engineer-DF/task-s/internal/repository"
 )
 
 var (
-	ErrNotFound    = errors.New("task not found")
+	ErrInvalidTask = errors.New("task not found")
 	ErrTooLongTask = errors.New("task title/description too long")
 )
 
@@ -24,13 +25,15 @@ type Service struct {
 	repo Repository
 }
 
-func validateTask(task domain.Task) error {
+// TODO: написать crud методы для реализации интерфейса
+
+func validateTask(task domain.Task, err error) error {
 	if len(task.Title) > 100 || len(task.Description) > 300 {
 		return ErrTooLongTask
 	}
-	if task.Title == "" {
-		task.Title = "Default title"
-		return nil
+
+	if errors.Is(err, repository.ErrNotFound) { // перенести в crud методы
+		return ErrInvalidTask
 	}
 
 	return nil
