@@ -1,13 +1,15 @@
 package repository
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 	"sync/atomic"
 
 	"github.com/Engineer-DF/task-s/internal/domain"
-	"github.com/Engineer-DF/task-s/internal/service"
 )
+
+var ErrNotFound error = errors.New("repository: not found")
 
 type TaskRepository struct {
 	tasks   map[int64]domain.Task
@@ -53,7 +55,7 @@ func (r *TaskRepository) GetAll() ([]domain.Task, error) {
 func (r *TaskRepository) GetByID(id int64) (domain.Task, error) {
 	task, exists := r.tasks[id]
 	if !exists {
-		return domain.Task{}, fmt.Errorf("failed to get task (ID: %d): %w", id, service.ErrNotFound)
+		return domain.Task{}, fmt.Errorf("failed to get task (ID: %d): %w", id, ErrNotFound)
 	}
 
 	return task, nil
@@ -71,7 +73,7 @@ func (r *TaskRepository) Create(task domain.Task) (domain.Task, error) {
 func (r *TaskRepository) Update(id int64, task domain.Task) error {
 	_, exists := r.tasks[id]
 	if !exists {
-		return fmt.Errorf("failed to update task (ID: %d): %w", id, service.ErrNotFound)
+		return fmt.Errorf("failed to update task (ID: %d): %w", id, ErrNotFound)
 	}
 
 	task.ID = id
@@ -83,7 +85,7 @@ func (r *TaskRepository) Update(id int64, task domain.Task) error {
 func (r *TaskRepository) Delete(id int64) error {
 	_, exists := r.tasks[id]
 	if !exists {
-		return fmt.Errorf("failed to delete task (ID: %d): %w", id, service.ErrNotFound)
+		return fmt.Errorf("failed to delete task (ID: %d): %w", id, ErrNotFound)
 	}
 	delete(r.tasks, id)
 	return nil
