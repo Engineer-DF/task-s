@@ -4,11 +4,10 @@ import (
 	"errors"
 
 	"github.com/Engineer-DF/task-s/internal/domain"
-	"github.com/Engineer-DF/task-s/internal/repository"
 )
 
 var (
-	ErrInvalidTask = errors.New("task not found")
+	ErrInvalidTask = errors.New("invalid task")
 	ErrTooLongTask = errors.New("task title/description too long")
 )
 
@@ -25,16 +24,46 @@ type Service struct {
 	repo Repository
 }
 
-// TODO: написать crud методы для реализации интерфейса
-
-func validateTask(task domain.Task, err error) error {
+func (s *Service) validateTask(task domain.Task) error {
 	if len(task.Title) > 100 || len(task.Description) > 300 {
 		return ErrTooLongTask
 	}
 
-	if errors.Is(err, repository.ErrNotFound) { // перенести в crud методы
+	if task.Title == "" {
 		return ErrInvalidTask
 	}
 
 	return nil
+}
+
+func (s *Service) GetAll() ([]domain.Task, error) {
+	return s.repo.GetAll()
+}
+
+func (s *Service) GetByID(id int64) (domain.Task, error) {
+	return s.repo.GetByID(id)
+}
+
+func (s *Service) Create(task domain.Task) (domain.Task, error) {
+	err := s.validateTask(task)
+
+	if err != nil {
+		return domain.Task{}, err
+	}
+
+	return s.repo.Create(task)
+}
+
+func (s *Service) Update(id int64, task domain.Task) error {
+	err := s.validateTask(task)
+
+	if err != nil {
+		return err
+	}
+
+	return s.repo.Update(id, task)
+}
+
+func (s *Service) Delete(id int64) error {
+	return s.repo.Delete(id)
 }
