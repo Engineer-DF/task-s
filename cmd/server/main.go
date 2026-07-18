@@ -19,7 +19,7 @@ type Server struct {
 	tasks   map[int64]Task
 	counter atomic.Int64
 	log     *slog.Logger
-}
+}	
 
 type Task struct {
 	ID          int64  `json:"id"`
