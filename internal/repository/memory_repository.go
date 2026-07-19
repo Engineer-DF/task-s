@@ -59,7 +59,7 @@ func (r *TaskRepository) GetByID(id int64) (domain.Task, error) {
 }
 
 // Возвращаем ошибку для возможной реализации метода с другими видами хранения данных (БД),
-// где требуется корректно обработать ошибку.
+// где требуется корректно обработать ошибку
 func (r *TaskRepository) Create(task domain.Task) (domain.Task, error) {
 	task.ID = r.counter.Add(1)
 	r.tasks[task.ID] = task
