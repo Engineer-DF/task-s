@@ -53,7 +53,7 @@ func (t *TaskHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	foundTask, err := t.service.GetByID(id)
 	if err != nil {
 		t.log.Warn("task not found")
-		http.Error(w, "task not found", http.StatusNoContent)
+		http.Error(w, "task not found", http.StatusNotFound)
 		return
 	}
 
@@ -102,6 +102,8 @@ func (t *TaskHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+
 	if err := json.NewDecoder(r.Body).Decode(&gotTask); err != nil {
 		t.log.Warn("failed to decode JSON", "method", r.Method, "pattern", r.Pattern, "error", err)
 		http.Error(w, "bad request body", http.StatusBadRequest)
@@ -111,7 +113,7 @@ func (t *TaskHandler) Update(w http.ResponseWriter, r *http.Request) {
 	err = t.service.Update(id, gotTask)
 	if err != nil {
 		t.log.Warn("task not found")
-		http.Error(w, "task not found", http.StatusNoContent)
+		http.Error(w, "task not found", http.StatusNotFound)
 		return
 	}
 
@@ -133,7 +135,7 @@ func (t *TaskHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	err = t.service.Delete(id)
 	if err != nil {
 		t.log.Warn("task not found")
-		http.Error(w, "task not found", http.StatusNoContent)
+		http.Error(w, "task not found", http.StatusNotFound)
 		return
 	}
 
