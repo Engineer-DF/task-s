@@ -12,6 +12,7 @@ var (
 )
 
 // Интерфейс существует для того, чтобы отделить реализацию методов от получателя
+// Интерфейс обычно объявляет потребитель, а не тот, кто его реализует.
 type Repository interface {
 	GetAll() ([]domain.Task, error)
 	GetByID(id int64) (domain.Task, error)
@@ -22,6 +23,10 @@ type Repository interface {
 
 type Service struct {
 	repo Repository
+}
+
+func NewService(repo Repository) *Service {
+	return &Service{repo: repo}
 }
 
 func (s *Service) validateTask(task domain.Task) error {
