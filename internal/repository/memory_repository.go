@@ -85,5 +85,6 @@ func (r *TaskRepository) Delete(id int64) error {
 		return fmt.Errorf("in-memory map delete task failed (ID: %d): %w", id, domain.ErrNotFound)
 	}
 	delete(r.tasks, id)
+
 	return nil
 }
