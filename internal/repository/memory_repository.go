@@ -3,12 +3,16 @@ package repository
 import (
 	"fmt"
 	"slices"
+	"sync"
 	"sync/atomic"
 
 	"github.com/Engineer-DF/task-s/internal/domain"
 )
 
+// TODO: ADD MULTITHREADING SUPPORT
+
 type TaskRepository struct {
+	mu      sync.Mutex
 	tasks   map[int64]domain.Task
 	counter atomic.Int64
 }
