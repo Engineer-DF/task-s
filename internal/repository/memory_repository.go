@@ -11,7 +11,7 @@ import (
 // TODO: ADD MULTITHREADING SUPPORT
 
 type TaskRepository struct {
-	mu      sync.Mutex
+	mu      sync.RWMutex
 	tasks   map[int64]domain.Task
 	counter int64
 }
@@ -49,8 +49,8 @@ func NewTaskRepository(initialTasks map[int64]domain.Task) *TaskRepository {
 }*/
 
 func (r *TaskRepository) GetAll() ([]domain.Task, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
 	mapKeys := make([]int64, 0, len(r.tasks))
 
@@ -69,8 +69,8 @@ func (r *TaskRepository) GetAll() ([]domain.Task, error) {
 }
 
 func (r *TaskRepository) GetByID(id int64) (domain.Task, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
 	task, exists := r.tasks[id]
 	if !exists {
