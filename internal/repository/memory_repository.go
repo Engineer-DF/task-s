@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"slices"
 	"sync"
-	"sync/atomic"
 
 	"github.com/Engineer-DF/task-s/internal/domain"
 )
@@ -14,19 +13,32 @@ import (
 type TaskRepository struct {
 	mu      sync.Mutex
 	tasks   map[int64]domain.Task
-	counter atomic.Int64
+	counter int64
 }
 
 func NewTaskRepository(initialTasks map[int64]domain.Task) *TaskRepository {
-	repo := &TaskRepository{
-		tasks: initialTasks,
+	copiedTasks := make(map[int64]domain.Task, len(initialTasks))
+	var maxID int64 = -1
+
+	for key, value := range initialTasks {
+		copiedTasks[key] = value
+		if key > maxID {
+			maxID = key
+		}
 	}
-	repo.counter.Store(repo.findMaxID())
+
+	repo := &TaskRepository{
+		tasks:   copiedTasks,
+		counter: maxID,
+	}
 	return repo
 }
 
-func (r *TaskRepository) findMaxID() int64 {
+/*func (r *TaskRepository) findMaxID() int64 {
 	var maxID int64 = -1
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
 	for key := range r.tasks {
 		if key > maxID {
@@ -34,9 +46,12 @@ func (r *TaskRepository) findMaxID() int64 {
 		}
 	}
 	return maxID
-}
+}*/
 
 func (r *TaskRepository) GetAll() ([]domain.Task, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	mapKeys := make([]int64, 0, len(r.tasks))
 
 	for keys := range r.tasks {
@@ -54,6 +69,9 @@ func (r *TaskRepository) GetAll() ([]domain.Task, error) {
 }
 
 func (r *TaskRepository) GetByID(id int64) (domain.Task, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	task, exists := r.tasks[id]
 	if !exists {
 		return domain.Task{}, fmt.Errorf("in-memory map get task failed (ID: %d): %w", id, domain.ErrNotFound)
@@ -65,13 +83,20 @@ func (r *TaskRepository) GetByID(id int64) (domain.Task, error) {
 // Возвращаем ошибку для возможной реализации метода с другими видами хранения данных (БД),
 // где требуется корректно обработать ошибку.
 func (r *TaskRepository) Create(task domain.Task) (domain.Task, error) {
-	task.ID = r.counter.Add(1)
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	r.counter++
+	task.ID = r.counter
 	r.tasks[task.ID] = task
 
 	return task, nil
 }
 
 func (r *TaskRepository) Update(id int64, task domain.Task) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	_, exists := r.tasks[id]
 	if !exists {
 		return fmt.Errorf("in-memory map update task failed (ID: %d): %w", id, domain.ErrNotFound)
@@ -84,6 +109,9 @@ func (r *TaskRepository) Update(id int64, task domain.Task) error {
 }
 
 func (r *TaskRepository) Delete(id int64) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	_, exists := r.tasks[id]
 	if !exists {
 		return fmt.Errorf("in-memory map delete task failed (ID: %d): %w", id, domain.ErrNotFound)
