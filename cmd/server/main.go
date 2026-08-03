@@ -38,7 +38,6 @@ func NewServer(l *slog.Logger, taskService *service.Service) *Server {
 func main() {
 	l := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
-	//сделать так чтобы к мапе имел доступ только вызывающий код. defensive copy епта. После исправления ком удалить.
 	initialTasks := make(map[int64]domain.Task)
 	repo := repository.NewTaskRepository(initialTasks)
 	taskService := service.NewService(repo)
