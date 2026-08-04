@@ -1,14 +1,13 @@
 package repository
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"sync"
 
 	"github.com/Engineer-DF/task-s/internal/domain"
 )
-
-// TODO: ADD MULTITHREADING SUPPORT
 
 type TaskRepository struct {
 	mu      sync.RWMutex
@@ -48,7 +47,7 @@ func NewTaskRepository(initialTasks map[int64]domain.Task) *TaskRepository {
 	return maxID
 }*/
 
-func (r *TaskRepository) GetAll() ([]domain.Task, error) {
+func (r *TaskRepository) GetAll(ctx context.Context) ([]domain.Task, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -68,7 +67,7 @@ func (r *TaskRepository) GetAll() ([]domain.Task, error) {
 	return allTasks, nil
 }
 
-func (r *TaskRepository) GetByID(id int64) (domain.Task, error) {
+func (r *TaskRepository) GetByID(ctx context.Context, id int64) (domain.Task, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -82,7 +81,7 @@ func (r *TaskRepository) GetByID(id int64) (domain.Task, error) {
 
 // Возвращаем ошибку для возможной реализации метода с другими видами хранения данных (БД),
 // где требуется корректно обработать ошибку.
-func (r *TaskRepository) Create(task domain.Task) (domain.Task, error) {
+func (r *TaskRepository) Create(ctx context.Context, task domain.Task) (domain.Task, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -93,7 +92,7 @@ func (r *TaskRepository) Create(task domain.Task) (domain.Task, error) {
 	return task, nil
 }
 
-func (r *TaskRepository) Update(id int64, task domain.Task) error {
+func (r *TaskRepository) Update(ctx context.Context, id int64, task domain.Task) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -108,7 +107,7 @@ func (r *TaskRepository) Update(id int64, task domain.Task) error {
 	return nil
 }
 
-func (r *TaskRepository) Delete(id int64) error {
+func (r *TaskRepository) Delete(ctx context.Context, id int64) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 

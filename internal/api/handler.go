@@ -1,7 +1,9 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -24,7 +26,7 @@ func NewTaskHandler(service *service.Service, log *slog.Logger) *TaskHandler {
 }
 
 func (t *TaskHandler) GetAll(w http.ResponseWriter, r *http.Request) {
-	tasks, err := t.service.GetAll()
+	tasks, err := t.service.GetAll(r.Context())
 	if err != nil {
 		t.log.Error("failed to get all tasks", "method", r.Method, "pattern", r.Pattern, "error", err)
 		http.Error(w, "failed to get all tasks", http.StatusInternalServerError)
@@ -39,7 +41,6 @@ func (t *TaskHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 }
 
 func (t *TaskHandler) GetByID(w http.ResponseWriter, r *http.Request) {
@@ -50,7 +51,7 @@ func (t *TaskHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	foundTask, err := t.service.GetByID(id)
+	foundTask, err := t.service.GetByID(r.Context(), id)
 	if err != nil {
 		t.log.Warn("task not found")
 		http.Error(w, "task not found", http.StatusNotFound)
@@ -75,8 +76,26 @@ func (t *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newTask, err := t.service.Create(gotTask)
+	newTask, err := t.service.Create(r.Context(), gotTask)
 	if err != nil {
+		if errors.Is(err, service.ErrInvalidTask) || errors.Is(err, service.ErrTooLongTask) {
+			t.log.Warn("task body not valid")
+			http.Error(w, "task not valid", http.StatusBadRequest)
+			return
+		}
+
+		if errors.Is(err, context.Canceled) {
+			t.log.Info("client cancelled request")
+			w.WriteHeader(499)
+			return
+		}
+
+		if errors.Is(err, context.DeadlineExceeded) {
+			t.log.Warn("request timeout exceeded")
+			http.Error(w, "request timeout", http.StatusGatewayTimeout)
+			return
+		}
+
 		t.log.Error("failed to create task", "method", r.Method, "pattern", r.Pattern, "error", err)
 		http.Error(w, "failed to create task", http.StatusInternalServerError)
 		return
@@ -102,20 +121,38 @@ func (t *TaskHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-
 	if err := json.NewDecoder(r.Body).Decode(&gotTask); err != nil {
 		t.log.Warn("failed to decode JSON", "method", r.Method, "pattern", r.Pattern, "error", err)
 		http.Error(w, "bad request body", http.StatusBadRequest)
 		return
 	}
 
-	err = t.service.Update(id, gotTask)
+	err = t.service.Update(r.Context(), id, gotTask)
 	if err != nil {
+		if errors.Is(err, service.ErrInvalidTask) || errors.Is(err, service.ErrTooLongTask) {
+			t.log.Warn("task body not valid")
+			http.Error(w, "task not valid", http.StatusBadRequest)
+			return
+		}
+
+		if errors.Is(err, context.Canceled) {
+			t.log.Info("client cancelled request")
+			w.WriteHeader(499)
+			return
+		}
+
+		if errors.Is(err, context.DeadlineExceeded) {
+			t.log.Warn("request timeout exceeded")
+			http.Error(w, "request timeout", http.StatusGatewayTimeout)
+			return
+		}
+
 		t.log.Warn("task not found")
 		http.Error(w, "task not found", http.StatusNotFound)
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(&gotTask); err != nil {
 		t.log.Error("failed to encode JSON", "method", r.Method, "pattern", r.Pattern, "error", err)
@@ -132,7 +169,7 @@ func (t *TaskHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = t.service.Delete(id)
+	err = t.service.Delete(r.Context(), id)
 	if err != nil {
 		t.log.Warn("task not found")
 		http.Error(w, "task not found", http.StatusNotFound)
