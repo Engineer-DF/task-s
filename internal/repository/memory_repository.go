@@ -33,20 +33,6 @@ func NewTaskRepository(initialTasks map[int64]domain.Task) *TaskRepository {
 	return repo
 }
 
-/*func (r *TaskRepository) findMaxID() int64 {
-	var maxID int64 = -1
-
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	for key := range r.tasks {
-		if key > maxID {
-			maxID = key
-		}
-	}
-	return maxID
-}*/
-
 func (r *TaskRepository) GetAll(ctx context.Context) ([]domain.Task, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
